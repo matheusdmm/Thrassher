@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #define STACK_MAX 256
+#define INIT_OBJ_NUM_MAX 8
+#define COMPILE_TIME_ASSERT(pred) switch(0){case 0:case pred:;}
 
 typedef enum {
     OBJ_INT,
@@ -11,6 +14,9 @@ typedef enum {
 typedef struct sObject {
     ObjectType type;
     unsigned char marked;
+
+    //  next object in the linked list
+    struct sObject* next;
 
     union {
         //  OBJ_INT
@@ -26,12 +32,26 @@ typedef struct sObject {
 
 typedef struct {
     Object* stack[STACK_MAX];
-    int stackSize
+    int stackSize;
+
+    //  first object in the linked list
+    Object* firstObject;
+
+    //  total numbers allocated in the garbage collector
+    int numObjects;
+
+    //  number of objects to trigger the garbage collector
+    int maxObjects;
+
 } VM;
 
 VM* newVM() {
     VM* vm = malloc(sizeof(VM));
     vm -> stackSize = 0;
+    vm -> firstObject = NULL;
+    vm -> numObjects = 0;
+    vm -> maxObjects = INIT_OBJ_NUM_MAX;
+
     return vm;
 }
 
@@ -45,9 +65,61 @@ Object* pop(VM* vm) {
     return vm -> stack[--vm -> stackSize];
 }
 
+
+void mark(Object* object) {
+    //  if already marked, ok, if not, check again the graph
+    if (object -> marked) return;
+    object -> marked = 1;
+
+    if (object -> type == OBJ_PAIR) {
+        mark(object -> head);
+        mark(object -> tail);
+    }
+}
+
+void markAll(VM* vm) {
+    for (int i = 0; i < vm -> stackSize; i++) {
+        mark(vm -> stack[i]);
+    }
+}
+
+void sweep(VM* vm) {
+    Object ** object = &vm -> firstObject;
+
+    while (*object) {
+        if (!(*object) -> marked) {
+            //  this obj isnt at reach, so it will be removed from the list
+            Object * unreached = *object;
+            *object = unreached -> next;
+            free(unreached);
+            vm -> numObjects--;
+        } else {
+            //  this one was reached, so it will be unmarked for the next garbage
+            (*object) -> marked = 0;
+            object = &(*object) -> next;
+        }
+    }
+}
+
+void gc(VM* vm) {
+    int numObjects = vm -> numObjects;
+    markAll(vm);
+    sweep(vm);
+
+    vm -> maxObjects = vm -> numObjects == 0 ? INIT_OBJ_NUM_MAX : vm -> numObjects * 2;
+
+    printf("Collected %d objects, %d remaining.\n", numObjects - vm -> numObjects, vm -> numObjects);
+}
+
 Object* newObject(VM* vm, ObjectType type) {
+    if (vm -> numObjects == vm -> maxObjects) gc(vm);
     Object* object = malloc(sizeof(Object));
     object -> type = type;
+    object -> next = vm->firstObject;
+    vm     -> firstObject = object;
+    object -> marked = 0;
+    vm->numObjects++;
+
     return object;
 }
 
@@ -57,7 +129,29 @@ void pushInt(VM* vm, int intValue) {
     push(vm, object);
 }
 
-void assert(int condition, const char* message) {
+void objectPrint(Object* object) {
+    switch (object -> type) {
+        case OBJ_INT:
+            printf("%d", object -> value);
+            break;
+
+        case OBJ_PAIR:
+            printf("(");
+            objectPrint(object -> head);
+            printf(", ");
+            objectPrint(object -> tail);
+            printf(")");
+            break;
+    }
+}
+
+void freeVM(VM *vm) {
+    vm -> stackSize = 0;
+    gc(vm);
+    freeVM(vm);
+}
+
+void asserty(int condition, const char* message) {
         if (!condition) {
             printf("%s\n", message);
             exit(1);
@@ -74,7 +168,7 @@ Object* pushPair(VM* vm) {
 }
 
 
-int main() {
+int main(int argc, const char * argv[]) {
     printf("Hello, garbage!\n");
     return 0;
 }
