@@ -1,10 +1,34 @@
+/***************************************************************************************\
+ *
+ *
+ *    /^^^ /^^^^^^
+ *        /^^    /^^                                    /^^
+ *       /^^    /^^     /^ /^^^   /^^     /^^^^  /^^^^ /^^        /^^    /^ /^^^
+ *      /^^    /^ /^    /^^    /^^  /^^ /^^    /^^    /^ /^    /^   /^^  /^^
+ *     /^^    /^^  /^^ /^^   /^^   /^^   /^^^   /^^^ /^^  /^^/^^^^^ /^^ /^^
+ *    /^^    /^   /^^ /^^   /^^   /^^     /^^    /^^/^   /^^/^         /^^
+ *   /^^    /^^  /^^/^^^     /^^ /^^^/^^ /^^/^^ /^^/^^  /^^  /^^^^   /^^^
+ *
+ *                              Garbage collector - 2021
+ *
+ *
+ *
+ *          Made using C11 standards
+ *          Clion
+ *          GCCx64 for windows
+ *
+ *
+ *
+ *  Heavily inspired by this article http://journal.stuffwithstuff.com/2013/12/08/babys-first-garbage-collector/ and made to learn more about garbage collector and how it works with code, and to also sharp my C skills.
+ \***************************************************************************************/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
 #define STACK_MAX 256
 #define INIT_OBJ_NUM_MAX 8
-#define COMPILE_TIME_ASSERT(pred) switch(0){case 0:case pred:;}
 
 typedef enum {
     OBJ_INT,
@@ -168,7 +192,19 @@ Object* pushPair(VM* vm) {
 }
 
 
+void test() {
+    printf("Test: Objects on stacks are preserved.\n");
+    VM* vm = newVM();
+    pushInt(vm, 1);
+    pushInt(vm, 2);
+    gc(vm);
+    asserty(vm -> numObjects == 2, "should have stayed objects");
+    free(vm);
+}
+
+
 int main(int argc, const char * argv[]) {
     printf("Hello, garbage!\n");
+    test();
     return 0;
 }
