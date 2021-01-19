@@ -1,0 +1,3 @@
+C:/Users/Matheus/Documents/Code/7_C/Thrassher/Thrassher/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+C:/Users/Matheus/Documents/Code/7_C/Thrassher/Thrassher/cmake-build-debug/CMakeFiles/Thrassher.dir
+C:/Users/Matheus/Documents/Code/7_C/Thrassher/Thrassher/cmake-build-debug/CMakeFiles/edit_cache.dir
